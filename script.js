@@ -9,10 +9,18 @@ let deltaTime = 0;
 let timeOfLastFrame = 0;
 canvas.addEventListener("mousemove", (e) => handleMouseMove(e));
 
+//ENTITIES
 const playerPaddle = {
   fillStyle: "blue",
   height: 100,
-  position: { x: 50, y: 0 },
+  position: { x: 25, y: 0 },
+  width: 20,
+};
+
+const aiPaddle = {
+  fillStyle: "lightgreen",
+  height: 100,
+  position: { x: WIDTH - 25, y: 0 },
   width: 20,
 };
 
@@ -25,6 +33,9 @@ const ball = {
   width: 20,
 };
 
+//END ENETITIES
+
+//GAME LOOP
 function loop(ms) {
   requestAnimationFrame(loop);
   const currentTime = ms / 1000;
@@ -38,17 +49,23 @@ function loop(ms) {
   checkForCollisions();
 
   drawRect(playerPaddle);
+  drawRect(aiPaddle);
   drawRect(ball);
 }
+//END GAME LOOP
 
+//HELPER FUNCTIONS
 function updatePositions() {
   ball.position.x += ball.speed * ball.direction.x * deltaTime;
   ball.position.y += ball.speed * ball.direction.y * deltaTime;
+
+  aiPaddle.position.y = ball.position.y - aiPaddle.height / 2;
 }
 
 function checkForCollisions() {
   const { position: ballPos, direction: ballDir } = ball;
   const { position: paddlePos } = playerPaddle;
+  const { position: aiPaddlePos } = aiPaddle;
   const topBound = 0;
   const leftBound = 0;
   const rightBound = WIDTH;
@@ -68,28 +85,50 @@ function checkForCollisions() {
     ball.direction.y = flipSignValue(ballDir.y);
   }
 
-  //ball collision with paddle
+  //Define Axis-Aligned Bounding Boxes
   const paddleY1 = paddlePos.y;
   const paddleY2 = paddlePos.y + playerPaddle.height;
   const paddleX1 = paddlePos.x;
   const paddleX2 = paddlePos.x + playerPaddle.width;
+
+  const aiPaddleY1 = aiPaddlePos.y;
+  const aiPaddleY2 = aiPaddlePos.y + aiPaddle.height;
+  const aiPaddleX1 = aiPaddlePos.x;
+  const aiPaddleX2 = aiPaddlePos.x + aiPaddle.width;
 
   const ballY1 = ballPos.y;
   const ballY2 = ballPos.y + ball.height;
   const ballX1 = ballPos.x;
   const ballX2 = ballPos.x + ball.width;
 
+  //ball collides with player paddle
   if (
     paddleX2 >= ballX1 &&
     paddleX1 <= ballX2 &&
     paddleY1 <= ballY2 &&
     paddleY2 >= ballY1
   ) {
+    //calculate ball trajetory depending where it hit paddle
     const d = distanceFromCenter(ball, playerPaddle);
     console.log("d", d);
     ball.direction.y = flipSignValue(d);
     ball.direction.x = flipSignValue(ballDir.x);
   }
+  //end ball collision with player paddle
+
+  //ball collision with AI paddle
+  if (
+    aiPaddleX1 <= ballX2 &&
+    aiPaddleX2 >= ballX1 &&
+    aiPaddleY1 <= ballY2 &&
+    aiPaddleY2 >= ballY1
+  ) {
+    console.log("hit!");
+    const d = distanceFromCenter(ball, aiPaddle);
+    ball.direction.y = flipSignValue(d);
+    ball.direction.x = flipSignValue(ballDir.x);
+  }
+  //end ball coliison with AI
 }
 
 function distanceFromCenter(ball, paddle) {
