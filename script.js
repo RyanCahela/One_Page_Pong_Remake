@@ -4,9 +4,14 @@ const WIDTH = canvas.width;
 const HEIGHT = canvas.height;
 const STEP = 1 / 60;
 const MAX_STEP = STEP * 5;
+const offBlack = "#212121";
 
 let deltaTime = 0;
 let timeOfLastFrame = 0;
+let scores = {
+  player: 0,
+  ai: 0,
+};
 canvas.addEventListener("mousemove", (e) => handleMouseMove(e));
 
 //ENTITIES
@@ -20,8 +25,9 @@ const playerPaddle = {
 const aiPaddle = {
   fillStyle: "lightgreen",
   height: 100,
-  position: { x: WIDTH - 25, y: 0 },
+  position: { x: WIDTH - 45, y: 0 },
   width: 20,
+  difficulty: 1, //percentToMove
 };
 
 const ball = {
@@ -43,6 +49,8 @@ function loop(ms) {
   timeOfLastFrame = currentTime;
 
   ctx.clearRect(0, 0, WIDTH, HEIGHT);
+  displayScores(scores);
+  drawMiddleNet();
 
   updatePositions();
 
@@ -59,7 +67,12 @@ function updatePositions() {
   ball.position.x += ball.speed * ball.direction.x * deltaTime;
   ball.position.y += ball.speed * ball.direction.y * deltaTime;
 
-  aiPaddle.position.y = ball.position.y - aiPaddle.height / 2;
+  const ballCenterY = ball.position.y + ball.height / 2;
+  const aiPaddleCenterY = aiPaddle.position.y + aiPaddle.height / 2;
+  const distanceToBall = ballCenterY - aiPaddleCenterY;
+  const percentToMove = aiPaddle.difficulty; //1.0 = 100%; 0.5 = 50%;
+  const distanceToMove = distanceToBall * percentToMove;
+  aiPaddle.position.y += distanceToMove;
 }
 
 function checkForCollisions() {
@@ -73,10 +86,12 @@ function checkForCollisions() {
 
   //ball collisions with map
   if (ballPos.x + ball.width > rightBound) {
-    ball.direction.x = flipSignValue(ballDir.x);
+    resetBall("left");
+    increaseScore("player");
   }
   if (ballPos.x < leftBound) {
-    resetBall();
+    resetBall("right");
+    increaseScore("ai");
   }
   if (ballPos.y + ball.height > bottomBound) {
     ball.direction.y = flipSignValue(ballDir.y);
@@ -84,6 +99,7 @@ function checkForCollisions() {
   if (ballPos.y < topBound) {
     ball.direction.y = flipSignValue(ballDir.y);
   }
+  //end ball collisions with map
 
   //Define Axis-Aligned Bounding Boxes
   const paddleY1 = paddlePos.y;
@@ -100,6 +116,18 @@ function checkForCollisions() {
   const ballY2 = ballPos.y + ball.height;
   const ballX1 = ballPos.x;
   const ballX2 = ballPos.x + ball.width;
+  //end Define Axis-Alighed Bounding Boxes
+
+  //paddles collide with top and bottom of map
+  if (paddleY1 < topBound) playerPaddle.position.y = topBound;
+  if (aiPaddleY1 < topBound) aiPaddle.position.y = topBound;
+  if (paddleY2 > bottomBound) {
+    playerPaddle.position.y = bottomBound - playerPaddle.height;
+  }
+  if (aiPaddleY2 > bottomBound) {
+    aiPaddle.position.y = bottomBound - aiPaddle.height;
+  }
+  //end paddles collide with top and bottom of map
 
   //ball collides with player paddle
   if (
@@ -110,7 +138,6 @@ function checkForCollisions() {
   ) {
     //calculate ball trajetory depending where it hit paddle
     const d = distanceFromCenter(ball, playerPaddle);
-    console.log("d", d);
     ball.direction.y = flipSignValue(d);
     ball.direction.x = flipSignValue(ballDir.x);
   }
@@ -123,7 +150,6 @@ function checkForCollisions() {
     aiPaddleY1 <= ballY2 &&
     aiPaddleY2 >= ballY1
   ) {
-    console.log("hit!");
     const d = distanceFromCenter(ball, aiPaddle);
     ball.direction.y = flipSignValue(d);
     ball.direction.x = flipSignValue(ballDir.x);
@@ -159,9 +185,19 @@ function drawRect(entity) {
   ctx.fillRect(position.x, position.y, width, height);
 }
 
-function resetBall() {
-  ball.position = { x: 50, y: 50 };
-  ball.direction = { x: 1, y: 1 };
+function resetBall(sideOfScreen = "left") {
+  switch (sideOfScreen) {
+    case "left":
+      ball.position = { x: WIDTH / 2, y: 50 };
+      ball.direction = { x: 1, y: 1 };
+      break;
+    case "right":
+      ball.position = { x: WIDTH / 2, y: 50 };
+      ball.direction = { x: -1, y: 1 };
+      break;
+    default:
+      console.error(`sideOfScrren was ${sideOfScreen}`);
+  }
 }
 
 function handleMouseMove(e) {
@@ -171,6 +207,34 @@ function handleMouseMove(e) {
 
 function clamp(num, min, max) {
   return Math.max(min, Math.min(num, max));
+}
+
+function increaseScore(personWhoScored) {
+  if (scores[personWhoScored] === undefined) {
+    console.error(`personWhoScored ${personWhoScored} not found`);
+    return;
+  }
+  scores[personWhoScored]++;
+  console.log(scores);
+}
+
+function displayScores(scores) {
+  const { player: playerScore, ai: aiScore } = scores;
+  const centerCanvas = WIDTH / 2;
+  ctx.textAlign = "center";
+  ctx.fillStyle = offBlack;
+  ctx.font = "20pt sans-serif";
+  ctx.fillText(playerScore, centerCanvas - 100, 50);
+  ctx.fillText(aiScore, centerCanvas + 100, 50);
+}
+
+function drawMiddleNet() {
+  ctx.fillStyle = offBlack;
+  ctx.setLineDash([5, 10]);
+  ctx.beginPath();
+  ctx.moveTo(WIDTH / 2, 0);
+  ctx.lineTo(WIDTH / 2, HEIGHT);
+  ctx.stroke();
 }
 
 requestAnimationFrame(loop);
