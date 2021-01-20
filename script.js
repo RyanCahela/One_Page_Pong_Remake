@@ -1,4 +1,7 @@
 const canvas = document.getElementById("canvas");
+const playerSFX = document.getElementById("player_ping");
+const aiSFX = document.getElementById("ai_ping");
+const gameOverSFX = document.getElementById("game_over_ping");
 const ctx = canvas.getContext("2d");
 const WIDTH = canvas.width;
 const HEIGHT = canvas.height;
@@ -88,16 +91,20 @@ function checkForCollisions() {
   if (ballPos.x + ball.width > rightBound) {
     resetBall("left");
     increaseScore("player");
+    gameOverSFX.play();
   }
   if (ballPos.x < leftBound) {
     resetBall("right");
     increaseScore("ai");
+    gameOverSFX.play();
   }
   if (ballPos.y + ball.height > bottomBound) {
     ball.direction.y = flipSignValue(ballDir.y);
+    playPlayerSFX();
   }
   if (ballPos.y < topBound) {
     ball.direction.y = flipSignValue(ballDir.y);
+    playPlayerSFX();
   }
   //end ball collisions with map
 
@@ -120,10 +127,10 @@ function checkForCollisions() {
 
   //paddles collide with top and bottom of map
   if (paddleY1 < topBound) playerPaddle.position.y = topBound;
-  if (aiPaddleY1 < topBound) aiPaddle.position.y = topBound;
   if (paddleY2 > bottomBound) {
     playerPaddle.position.y = bottomBound - playerPaddle.height;
   }
+  if (aiPaddleY1 < topBound) aiPaddle.position.y = topBound;
   if (aiPaddleY2 > bottomBound) {
     aiPaddle.position.y = bottomBound - aiPaddle.height;
   }
@@ -140,6 +147,7 @@ function checkForCollisions() {
     const d = distanceFromCenter(ball, playerPaddle);
     ball.direction.y = flipSignValue(d);
     ball.direction.x = flipSignValue(ballDir.x);
+    playPlayerSFX();
   }
   //end ball collision with player paddle
 
@@ -153,6 +161,7 @@ function checkForCollisions() {
     const d = distanceFromCenter(ball, aiPaddle);
     ball.direction.y = flipSignValue(d);
     ball.direction.x = flipSignValue(ballDir.x);
+    playPlayerSFX();
   }
   //end ball coliison with AI
 }
@@ -161,9 +170,6 @@ function distanceFromCenter(ball, paddle) {
   const ballYCenter = ball.position.y + ball.height / 2;
   const paddleYCenter = paddle.position.y + paddle.height / 2;
   const distanceFromCenter = (paddleYCenter - ballYCenter) * 0.01;
-
-  console.log("distanceFromCenter", distanceFromCenter);
-
   return clamp(distanceFromCenter, -2, 2);
 }
 
@@ -215,7 +221,6 @@ function increaseScore(personWhoScored) {
     return;
   }
   scores[personWhoScored]++;
-  console.log(scores);
 }
 
 function displayScores(scores) {
@@ -235,6 +240,10 @@ function drawMiddleNet() {
   ctx.moveTo(WIDTH / 2, 0);
   ctx.lineTo(WIDTH / 2, HEIGHT);
   ctx.stroke();
+}
+
+function playPlayerSFX() {
+  playerSFX.play();
 }
 
 requestAnimationFrame(loop);
