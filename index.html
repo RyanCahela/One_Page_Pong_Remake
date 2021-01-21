@@ -4,6 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <style>
+      body {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+      }
       #board {
         height: 100vh;
         display: flex;
@@ -18,6 +24,11 @@
     <title>One Page Pong Remake</title>
   </head>
   <body>
+    <header>
+      <button id="start_game_button">Start Game</button>
+      <button id="restart_game_button">Restart Game</button>
+      <button id="pause_game_button">Pause Game</button>
+    </header>
     <div id="board">
       <canvas id="canvas" width="640" height="480"></canvas>
     </div>

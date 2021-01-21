@@ -2,6 +2,9 @@ const canvas = document.getElementById("canvas");
 const playerSFX = document.getElementById("player_ping");
 const aiSFX = document.getElementById("ai_ping");
 const gameOverSFX = document.getElementById("game_over_ping");
+const startGameButton = document.getElementById("start_game_button");
+const restartGameButton = document.getElementById("restart_game_button");
+const pauseGameButton = document.getElementById("pause_game_button");
 const ctx = canvas.getContext("2d");
 const WIDTH = canvas.width;
 const HEIGHT = canvas.height;
@@ -9,6 +12,7 @@ const STEP = 1 / 60;
 const MAX_STEP = STEP * 5;
 const offBlack = "#212121";
 
+let loopId = null;
 let deltaTime = 0;
 let timeOfLastFrame = 0;
 let scores = {
@@ -16,6 +20,9 @@ let scores = {
   ai: 0,
 };
 canvas.addEventListener("mousemove", (e) => handleMouseMove(e));
+startGameButton.addEventListener("click", startGame);
+restartGameButton.addEventListener("click", restartGame);
+pauseGameButton.addEventListener("click", pauseGame);
 
 //ENTITIES
 const playerPaddle = {
@@ -30,14 +37,14 @@ const aiPaddle = {
   height: 100,
   position: { x: WIDTH - 45, y: 0 },
   width: 20,
-  difficulty: 1, //percentToMove
+  difficulty: 0.01, //percentToMove
 };
 
 const ball = {
   direction: { x: 1, y: 1 },
   fillStyle: "red",
   height: 20,
-  speed: 500,
+  speed: 300,
   position: { x: 50, y: 50 },
   width: 20,
 };
@@ -46,7 +53,7 @@ const ball = {
 
 //GAME LOOP
 function loop(ms) {
-  requestAnimationFrame(loop);
+  loopId = requestAnimationFrame(loop);
   const currentTime = ms / 1000;
   deltaTime = Math.min(currentTime - timeOfLastFrame, MAX_STEP);
   timeOfLastFrame = currentTime;
@@ -56,7 +63,6 @@ function loop(ms) {
   drawMiddleNet();
 
   updatePositions();
-
   checkForCollisions();
 
   drawRect(playerPaddle);
@@ -72,9 +78,16 @@ function updatePositions() {
 
   const ballCenterY = ball.position.y + ball.height / 2;
   const aiPaddleCenterY = aiPaddle.position.y + aiPaddle.height / 2;
-  const distanceToBall = ballCenterY - aiPaddleCenterY;
+  let distanceToMove = ballCenterY - aiPaddleCenterY;
   const percentToMove = aiPaddle.difficulty; //1.0 = 100%; 0.5 = 50%;
-  const distanceToMove = distanceToBall * percentToMove;
+  if (distanceToMove > 0) {
+    //ball below paddle - paddle need to move down
+    const move = distanceToMove * Math.random();
+    aiPaddle.position.y += move;
+  } else if (distanceToMove < 0) {
+    //ball above paddle - paddle need to move up
+    aiPaddle.position.y += distanceToMove * Math.random();
+  }
   aiPaddle.position.y += distanceToMove;
 }
 
@@ -99,10 +112,12 @@ function checkForCollisions() {
     gameOverSFX.play();
   }
   if (ballPos.y + ball.height > bottomBound) {
+    ball.position.y = HEIGHT - ball.height;
     ball.direction.y = flipSignValue(ballDir.y);
     playPlayerSFX();
   }
   if (ballPos.y < topBound) {
+    ball.position.y = 0;
     ball.direction.y = flipSignValue(ballDir.y);
     playPlayerSFX();
   }
@@ -145,6 +160,7 @@ function checkForCollisions() {
   ) {
     //calculate ball trajetory depending where it hit paddle
     const d = distanceFromCenter(ball, playerPaddle);
+    ball.position.x = paddleX2;
     ball.direction.y = flipSignValue(d);
     ball.direction.x = flipSignValue(ballDir.x);
     playPlayerSFX();
@@ -159,6 +175,7 @@ function checkForCollisions() {
     aiPaddleY2 >= ballY1
   ) {
     const d = distanceFromCenter(ball, aiPaddle);
+    ball.position.x = aiPaddleX1 - ball.width;
     ball.direction.y = flipSignValue(d);
     ball.direction.x = flipSignValue(ballDir.x);
     playPlayerSFX();
@@ -224,13 +241,12 @@ function increaseScore(personWhoScored) {
 }
 
 function displayScores(scores) {
-  const { player: playerScore, ai: aiScore } = scores;
   const centerCanvas = WIDTH / 2;
   ctx.textAlign = "center";
   ctx.fillStyle = offBlack;
   ctx.font = "20pt sans-serif";
-  ctx.fillText(playerScore, centerCanvas - 100, 50);
-  ctx.fillText(aiScore, centerCanvas + 100, 50);
+  ctx.fillText(scores.player, centerCanvas - 100, 50);
+  ctx.fillText(scores.ai, centerCanvas + 100, 50);
 }
 
 function drawMiddleNet() {
@@ -246,4 +262,23 @@ function playPlayerSFX() {
   playerSFX.play();
 }
 
-requestAnimationFrame(loop);
+function startGame() {
+  loopId = requestAnimationFrame(loop);
+}
+
+function restartGame() {
+  console.log(loopId);
+  scores.player = 0;
+  scores.ai = 0;
+  resetBall("left");
+  cancelAnimationFrame(loopId);
+  startGame();
+}
+
+function pauseGame() {
+  cancelAnimationFrame(loopId);
+}
+
+function playGame() {
+  requestAnimationFrame(loop);
+}
