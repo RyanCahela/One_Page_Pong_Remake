@@ -59,6 +59,8 @@ function loop(ms) {
   timeOfLastFrame = currentTime;
 
   ctx.clearRect(0, 0, WIDTH, HEIGHT);
+  checkScore("player");
+  checkScore("ai");
   displayScores(scores);
   drawMiddleNet();
 
@@ -221,14 +223,12 @@ function resetBall(sideOfScreen = "left") {
     default:
       console.error(`sideOfScrren was ${sideOfScreen}`);
   }
-  resetPaddles();
+  resetAIPaddle();
 }
 
-function resetPaddles() {
+function resetAIPaddle() {
   aiPaddle.position.x = WIDTH - 45;
   aiPaddle.position.y = HEIGHT / 2;
-  playerPaddle.position.x = 25;
-  playerPaddle.position.y = HEIGHT / 2;
 }
 
 function handleMouseMove(e) {
@@ -289,4 +289,22 @@ function pauseGame() {
 
 function playGame() {
   requestAnimationFrame(loop);
+}
+
+function checkScore(playerToCheck) {
+  const scoreToWin = 5;
+  if (scores[playerToCheck] === scoreToWin) {
+    handleGameOver(playerToCheck);
+  }
+}
+
+function handleGameOver(playerWhoWon) {
+  pauseGame();
+  ctx.fillStyle = offBlack;
+  ctx.font = "20pt monospace";
+  ctx.fillText(
+    `Game over you ${playerWhoWon === "player" ? "WIN!" : "Lose!"}`,
+    WIDTH / 2,
+    HEIGHT / 2
+  );
 }
