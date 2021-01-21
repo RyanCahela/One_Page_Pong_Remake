@@ -28,14 +28,14 @@ pauseGameButton.addEventListener("click", pauseGame);
 const playerPaddle = {
   fillStyle: "blue",
   height: 100,
-  position: { x: 25, y: 0 },
+  position: { x: 25, y: HEIGHT / 2 },
   width: 20,
 };
 
 const aiPaddle = {
   fillStyle: "lightgreen",
   height: 100,
-  position: { x: WIDTH - 45, y: 0 },
+  position: { x: WIDTH - 45, y: HEIGHT / 2 },
   width: 20,
   difficulty: 0.01, //percentToMove
 };
@@ -44,7 +44,7 @@ const ball = {
   direction: { x: 1, y: 1 },
   fillStyle: "red",
   height: 20,
-  speed: 300,
+  speed: 400,
   position: { x: 50, y: 50 },
   width: 20,
 };
@@ -78,17 +78,16 @@ function updatePositions() {
 
   const ballCenterY = ball.position.y + ball.height / 2;
   const aiPaddleCenterY = aiPaddle.position.y + aiPaddle.height / 2;
-  let distanceToMove = ballCenterY - aiPaddleCenterY;
-  const percentToMove = aiPaddle.difficulty; //1.0 = 100%; 0.5 = 50%;
-  if (distanceToMove > 0) {
-    //ball below paddle - paddle need to move down
-    const move = distanceToMove * Math.random();
-    aiPaddle.position.y += move;
-  } else if (distanceToMove < 0) {
+  const aiPaddleY1 = aiPaddle.position.y;
+  const aiPaddleY2 = aiPaddle.position.y + aiPaddle.height;
+
+  if (aiPaddleY1 >= ballCenterY) {
     //ball above paddle - paddle need to move up
-    aiPaddle.position.y += distanceToMove * Math.random();
+    aiPaddle.position.y -= Math.random() >= 0.5 ? 0 : 5;
+  } else if (aiPaddleY2 <= ballCenterY) {
+    //ball below paddle - paddle need to move down
+    aiPaddle.position.y += Math.random() >= 0.5 ? 0 : 5;
   }
-  aiPaddle.position.y += distanceToMove;
 }
 
 function checkForCollisions() {
@@ -147,6 +146,7 @@ function checkForCollisions() {
   }
   if (aiPaddleY1 < topBound) aiPaddle.position.y = topBound;
   if (aiPaddleY2 > bottomBound) {
+    console.log("locked");
     aiPaddle.position.y = bottomBound - aiPaddle.height;
   }
   //end paddles collide with top and bottom of map
@@ -211,16 +211,24 @@ function drawRect(entity) {
 function resetBall(sideOfScreen = "left") {
   switch (sideOfScreen) {
     case "left":
-      ball.position = { x: WIDTH / 2, y: 50 };
+      ball.position = { x: WIDTH / 2, y: 10 };
       ball.direction = { x: 1, y: 1 };
       break;
     case "right":
-      ball.position = { x: WIDTH / 2, y: 50 };
+      ball.position = { x: WIDTH / 2, y: 10 };
       ball.direction = { x: -1, y: 1 };
       break;
     default:
       console.error(`sideOfScrren was ${sideOfScreen}`);
   }
+  resetPaddles();
+}
+
+function resetPaddles() {
+  aiPaddle.position.x = WIDTH - 45;
+  aiPaddle.position.y = HEIGHT / 2;
+  playerPaddle.position.x = 25;
+  playerPaddle.position.y = HEIGHT / 2;
 }
 
 function handleMouseMove(e) {
