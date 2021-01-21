@@ -11,6 +11,19 @@ const HEIGHT = canvas.height;
 const STEP = 1 / 60;
 const MAX_STEP = STEP * 5;
 const offBlack = "#212121";
+const offWhite = "#FAFAFA";
+const materialRed = "#f44336";
+const materialBlue = "#2196F3";
+const ballColors = [
+  "#8BC34A",
+  "#FF5722",
+  "#9C27B0",
+  "#E91E63",
+  "#00BCD4",
+  materialRed,
+  materialBlue,
+];
+const indexTracker = createIndexTracker(ballColors.length - 1);
 
 let loopId = null;
 let deltaTime = 0;
@@ -26,14 +39,14 @@ pauseGameButton.addEventListener("click", pauseGame);
 
 //ENTITIES
 const playerPaddle = {
-  fillStyle: "blue",
+  fillStyle: materialBlue,
   height: 100,
   position: { x: 25, y: HEIGHT / 2 },
   width: 20,
 };
 
 const aiPaddle = {
-  fillStyle: "lightgreen",
+  fillStyle: materialRed,
   height: 100,
   position: { x: WIDTH - 45, y: HEIGHT / 2 },
   width: 20,
@@ -42,7 +55,7 @@ const aiPaddle = {
 
 const ball = {
   direction: { x: 1, y: 1 },
-  fillStyle: "red",
+  fillStyle: ballColors[0],
   height: 20,
   speed: 400,
   position: { x: 50, y: 50 },
@@ -59,6 +72,8 @@ function loop(ms) {
   timeOfLastFrame = currentTime;
 
   ctx.clearRect(0, 0, WIDTH, HEIGHT);
+  ctx.fillStyle = offBlack;
+  ctx.fillRect(0, 0, WIDTH, HEIGHT);
   checkScore("player");
   checkScore("ai");
   displayScores(scores);
@@ -166,6 +181,7 @@ function checkForCollisions() {
     ball.direction.y = flipSignValue(d);
     ball.direction.x = flipSignValue(ballDir.x);
     playPlayerSFX();
+    changeBallColor();
   }
   //end ball collision with player paddle
 
@@ -181,6 +197,7 @@ function checkForCollisions() {
     ball.direction.y = flipSignValue(d);
     ball.direction.x = flipSignValue(ballDir.x);
     playPlayerSFX();
+    changeBallColor();
   }
   //end ball coliison with AI
 }
@@ -251,14 +268,14 @@ function increaseScore(personWhoScored) {
 function displayScores(scores) {
   const centerCanvas = WIDTH / 2;
   ctx.textAlign = "center";
-  ctx.fillStyle = offBlack;
+  ctx.fillStyle = offWhite;
   ctx.font = "20pt sans-serif";
   ctx.fillText(scores.player, centerCanvas - 100, 50);
   ctx.fillText(scores.ai, centerCanvas + 100, 50);
 }
 
 function drawMiddleNet() {
-  ctx.fillStyle = offBlack;
+  ctx.strokeStyle = offWhite;
   ctx.setLineDash([5, 10]);
   ctx.beginPath();
   ctx.moveTo(WIDTH / 2, 0);
@@ -300,11 +317,22 @@ function checkScore(playerToCheck) {
 
 function handleGameOver(playerWhoWon) {
   pauseGame();
-  ctx.fillStyle = offBlack;
+  ctx.fillStyle = offWhite;
   ctx.font = "20pt monospace";
   ctx.fillText(
-    `Game over you ${playerWhoWon === "player" ? "WIN!" : "Lose!"}`,
+    `Game over you ${playerWhoWon === "player" ? "WIN!" : "lose!"}`,
     WIDTH / 2,
     HEIGHT / 2
   );
+}
+
+function changeBallColor() {
+  ball.fillStyle = ballColors[indexTracker()];
+}
+function createIndexTracker(maxIndex) {
+  let currentIndex = 0;
+  return () => {
+    currentIndex++;
+    return currentIndex % maxIndex;
+  };
 }
